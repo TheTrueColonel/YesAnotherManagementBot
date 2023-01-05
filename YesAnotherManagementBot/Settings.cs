@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using Newtonsoft.Json;
-using YAMB.Modules.AWS;
 
 namespace YAMB; 
 
@@ -22,6 +21,9 @@ public sealed class GlobalSettings {
 
         AccessKeyId = map["AccessKeyID"];
         SecretAccessKey = map["SecretAccessKey"];
+        EncryptionKey = map["EncryptionKey"];
+        SignatureKey = map["SignatureKey"];
+        ConnectionString = map["ConnectionString"];
     }
     
     public static GlobalSettings Instance {
@@ -34,26 +36,7 @@ public sealed class GlobalSettings {
     
     public string AccessKeyId { get; }
     public string SecretAccessKey { get; }
+    public string EncryptionKey { get; }
+    public string SignatureKey { get; }
+    public string ConnectionString { get; }
 }
-
-/*public sealed class BotSettings {
-    private static BotSettings? _instance;
-    private static readonly object Lock = new();
-
-    private BotSettings() {
-        var json = AwsModule.GetSecret("Production/YAMB").Result;
-        var map = JsonConvert.DeserializeObject<Dictionary<string, string>>(json)!;
-
-        Token = map["OAuthToken"];
-    }
-    
-    public static BotSettings Instance {
-        get {
-            lock (Lock) {
-                return _instance ??= new BotSettings();
-            }
-        }
-    }
-    
-    public string Token { get; }
-}*/

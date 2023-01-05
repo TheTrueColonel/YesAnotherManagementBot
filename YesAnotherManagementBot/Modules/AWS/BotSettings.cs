@@ -37,4 +37,11 @@ public sealed class BotSettings : IDisposable {
 
         return map["OAuthToken"];
     }
+
+    public async Task<string> GetDbCredentials(string key) {
+        var json = await _cache.GetSecretString("rds!db-4cc8273b-985c-4779-836c-74357d5b1ec0");
+        var map = JsonConvert.DeserializeObject<Dictionary<string, string>>(json)!;
+
+        return map[key];
+    }
 }

@@ -1,41 +1,52 @@
 ﻿using Discord;
+using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using YAMB.Modules;
+using YAMB.Context;
+using YAMB.Handlers;
 using YAMB.Modules.AWS;
 
 namespace YAMB
 {
-    public sealed class Program
-    {
-        static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
+    public sealed class Program {
+        private DiscordSocketClient _client;
+
+        private InteractionService _interactionService;
+        
+        private IServiceProvider _services;
+
+        public static void Main() => new Program().MainAsync().GetAwaiter().GetResult();
 
         private async Task MainAsync() {
-            using var host = Host.CreateDefaultBuilder()
-                                 .ConfigureServices((_, services) => {
-                                     services.AddSingleton(x => new DiscordSocketClient(new DiscordSocketConfig {
-                                         GatewayIntents = GatewayIntents.AllUnprivileged,
-                                         AlwaysDownloadUsers = true
-                                     }));
-                                 }).Build();
-
-            var test = Encryption.EncryptString("This is a really long test to test out the AES encryption method :)");
-            var test2 = Encryption.DecryptString(test);
+            _client = new DiscordSocketClient(new DiscordSocketConfig {
+                GatewayIntents = GatewayIntents.AllUnprivileged,
+                AlwaysDownloadUsers = true,
+                LogLevel = LogSeverity.Verbose
+            });
             
-            await RunAsync(host);
-        }
-
-        private async Task RunAsync(IHost host) {
-            using var scope = host.Services.CreateScope();
-            var provider = scope.ServiceProvider;
-
-            var client = provider.GetRequiredService<DiscordSocketClient>();
-
-            client.Log += Logger;
+            _services = new ServiceCollection()
+                        .AddDbContext<AppDbContext>()
+                        .AddSingleton(_client)
+                        .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()))
+                        .AddSingleton<InteractionHandler>()
+                        .BuildServiceProvider();
             
-            await client.LoginAsync(TokenType.Bot, await BotSettings.Instance.GetToken());
-            await client.StartAsync();
+            _interactionService = _services.GetRequiredService<InteractionService>();
+            
+            await _services.GetRequiredService<InteractionHandler>().InitializeAsync();
+
+            _client.Log += Logger;
+            _interactionService.Log += Logger;
+
+            _client.Ready += async () => {
+                await _interactionService.RegisterCommandsGloballyAsync();
+            };
+            
+            await _client.LoginAsync(TokenType.Bot, await BotSettings.Instance.GetToken());
+            await _client.StartAsync();
 
             await Task.Delay(-1);
         }

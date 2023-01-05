@@ -1,4 +1,6 @@
 ﻿{
   "AccessKeyID": "",
-  "SecretAccessKey": ""
+  "SecretAccessKey": "",
+  "EncryptionKey": "",
+  "SignatureKey": ""
 }
